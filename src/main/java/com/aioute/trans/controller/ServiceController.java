@@ -2,7 +2,7 @@ package com.aioute.trans.controller;
 
 import com.aioute.trans.dao.ServiceDao;
 import com.aioute.trans.model.ServiceModel;
-import com.aioute.trans.util.SendAppJSONUtil;
+import com.aioute.util.SendAppJSONUtil;
 import org.apache.log4j.Logger;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
