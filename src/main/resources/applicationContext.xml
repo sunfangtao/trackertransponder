@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans-2.5.xsd">
+
+    <!--  自动注入properties属性文件 -->
+    <bean id="configProperties" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+        <property name="order" value="1"/>
+        <property name="ignoreUnresolvablePlaceholders" value="true"/>
+        <property name="locations">
+            <list>
+                <value>classpath:resource.properties</value>
+            </list>
+        </property>
+    </bean>
+
+    <bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource"
+          init-method="init" destroy-method="close">
+        <property name="driverClassName" value="${db.driverClassName}" />
+        <property name="url" value="${db.url}" />
+        <property name="username" value="${db.username}" />
+        <property name="password" value="${db.password}" />
+        <!-- 配置初始化大小、最小、最大 -->
+        <property name="initialSize" value="1" />
+        <property name="minIdle" value="1" />
+        <property name="maxActive" value="10" />
+
+        <!-- 配置获取连接等待超时的时间 -->
+        <property name="maxWait" value="10000" />
+
+        <!-- 配置间隔多久才进行一次检测，检测需要关闭的空闲连接，单位是毫秒 -->
+        <property name="timeBetweenEvictionRunsMillis" value="60000" />
+
+        <!-- 配置一个连接在池中最小生存的时间，单位是毫秒 -->
+        <property name="minEvictableIdleTimeMillis" value="300000" />
+
+        <property name="testWhileIdle" value="true" />
+
+        <!-- 这里建议配置为TRUE，防止取到的连接不可用 -->
+        <property name="testOnBorrow" value="true" />
+        <property name="testOnReturn" value="false" />
+
+        <!-- 打开PSCache，并且指定每个连接上PSCache的大小 -->
+        <property name="poolPreparedStatements" value="true" />
+        <property name="maxPoolPreparedStatementPerConnectionSize" value="20" />
+
+        <!-- 这里配置提交方式，默认就是TRUE，可以不用配置 -->
+        <property name="defaultAutoCommit" value="true" />
+
+    </bean>
+
+    <bean id="sqlConnectionFactory" class="com.aioute.trans.db.SqlConnectionFactory">
+        <property name="dataSource" ref="dataSource"/>
+    </bean>
+
+    <!-- mina server -->
+    <bean id="serverHandler" class="com.aioute.trans.handler.ServerHandler"/>
+
+    <!-- executorFilter多线程处理 -->
+    <bean id="executorFilter" class="org.apache.mina.filter.executor.ExecutorFilter"/>
+
+    <bean id="mdcInjectionFilter" class="org.apache.mina.filter.logging.MdcInjectionFilter">
+        <constructor-arg value="remoteAddress"/>
+    </bean>
+
+    <bean id="codecFilter" class="org.apache.mina.filter.codec.ProtocolCodecFilter">
+        <constructor-arg>
+            <bean class="com.aioute.trans.coder.ServerCodeFactory"/>
+        </constructor-arg>
+    </bean>
+
+    <bean id="loggingFilter" class="org.apache.mina.filter.logging.LoggingFilter"/>
+
+    <bean id="filterChainBuilder"
+          class="org.apache.mina.core.filterchain.DefaultIoFilterChainBuilder">
+        <property name="filters">
+            <map>
+                <entry key="executor" value-ref="executorFilter"/>
+                <entry key="mdcInjectionFilter" value-ref="mdcInjectionFilter"/>
+                <entry key="codecFilter" value-ref="codecFilter"/>
+                <entry key="loggingFilter" value-ref="loggingFilter"/>
+            </map>
+        </property>
+    </bean>
+
+    <bean class="org.springframework.beans.factory.config.CustomEditorConfigurer">
+        <property name="customEditors">
+            <map>
+                <entry key="java.net.SocketAddress" value="org.apache.mina.integration.beans.InetSocketAddressEditor">
+                </entry>
+            </map>
+        </property>
+    </bean>
+
+    <bean id="ioAcceptor" class="org.apache.mina.transport.socket.nio.NioSocketAcceptor"
+          init-method="bind" destroy-method="unbind">
+        <property name="defaultLocalAddress" value=":5189"/>
+        <!--<property name="defaultLocalAddress" value=":9099"/>-->
+        <property name="handler" ref="serverHandler"/>
+        <property name="filterChainBuilder" ref="filterChainBuilder"/>
+        <property name="reuseAddress" value="true"/>
+    </bean>
+
+</beans>
