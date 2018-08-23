@@ -61,17 +61,20 @@ public class ServerDecoder extends CumulativeProtocolDecoder {
                         }
                     }
                 }
+                session.close(true);
             } else {
                 // 不够一个包的长度，清空
                 while (in.hasRemaining()) {
                     in.get();
                 }
+                session.close(true);
             }
         } else {
             // 第一个字节出错，清空
             while (in.hasRemaining()) {
                 in.get();
             }
+            session.close(true);
         }
         return false;// 处理成功，让父类进行接收下个包
     }

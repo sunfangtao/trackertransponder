@@ -9,7 +9,9 @@ import javax.annotation.Resource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 @Repository
@@ -57,13 +59,13 @@ public class ServiceDaoImpl implements ServiceDao {
         ResultSet rs = null;
 
         StringBuffer sb = new StringBuffer();
-        sb.append("insert into serverdevice (id,devicenum) values (?,?)");
-        List<ServiceModel> serviceList = new ArrayList<ServiceModel>();
+        sb.append("insert into serverdevice (id,devicenum,time) values (?,?,?)");
         try {
             con = sqlConnectionFactory.getConnection();
             ps = con.prepareStatement(sb.toString());
             ps.setInt(1, serviceId);
             ps.setString(2, deviceNum);
+            ps.setString(3, new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
 
             return ps.executeUpdate() > 0;
         } catch (Exception e) {
@@ -82,9 +84,10 @@ public class ServiceDaoImpl implements ServiceDao {
         StringBuffer sb = new StringBuffer();
         sb.append("select a.*, count(b.id) as count from trackerserver a left join serverdevice b on a.id = b.id");
         if (type != null) {
-            sb.append(" and a.type = ?");
+            sb.append(" where a.type = ?");
         }
         sb.append(" group by a.id");
+        ;
 
         List<ServiceModel> modelList = new ArrayList<ServiceModel>();
         try {
